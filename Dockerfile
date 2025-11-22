@@ -57,10 +57,15 @@ COPY . ${APP_BASE_DIR}
 COPY --from=node-builder /app/public/build ${APP_BASE_DIR}/public/build
 
 # Fix permissions using serversideup helper
-RUN docker-php-serversideup-set-file-permissions \
-    --owner www-data \
-    --group www-data \
-    ${APP_BASE_DIR}
+# RUN docker-php-serversideup-set-file-permissions \
+#     --owner www-data \
+#     --group www-data \
+#     ${APP_BASE_DIR}
+# RUN docker-php-serversideup-set-file-permissions \
+#     --owner www-data:www-data \
+#     --dir /var/www/html/storage \
+#     --dir /var/www/html/bootstrap/cache
+
 
 USER www-data
 
