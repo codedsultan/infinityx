@@ -1,4 +1,6 @@
 # syntax=docker/dockerfile:1.5
+# Global build arg: can be used in any FROM below
+ARG PHP_VERSION=8.3
 
 ####################################
 # Stage 1: Node frontend build
@@ -22,7 +24,7 @@ RUN npm run build
 
 ####################################
 # Stage 2: Production (nginx + PHP-FPM)
-ARG PHP_VERSION=8.3
+
 FROM serversideup/php:${PHP_VERSION}-fpm-nginx AS production
 
 ENV APP_BASE_DIR=/var/www/html \
