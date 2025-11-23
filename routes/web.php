@@ -16,4 +16,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 });
 
-require __DIR__.'/settings.php';
+
+Route::get('/healthcheck', function () {
+    return response()->json(['status' => 'ok'], 200);
+});
+
+require __DIR__ . '/settings.php';
