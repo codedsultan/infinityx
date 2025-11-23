@@ -1,7 +1,7 @@
 # .github/workflows/deploy.yml
 # Deploy infinityx (codesultan) to production via WireGuard VPN, using Ansible from xurl-infra
 
-name: Deploy to Production
+name: Deploy CodeSultan to Production
 
 on:
   # Manual trigger - deploy any tag/commit
@@ -21,10 +21,16 @@ on:
 env:
   IMAGE_TAG: ${{ github.event.inputs.image_tag || github.ref_name }}
 
+# Ensure only one CodeSultan prod deploy at a time
+concurrency:
+  group: deploy-codesultan-prod
+  cancel-in-progress: true
+
 jobs:
   deploy-production:
     runs-on: ubuntu-latest
     environment: production
+    timeout-minutes: 25 # 🔒 Hard cap for the whole job
 
     steps:
       - name: Checkout app repo (infinityx)
@@ -49,7 +55,7 @@ jobs:
       - name: Install WireGuard & Ansible
         run: |
           sudo apt-get update
-          sudo apt-get install -y wireguard ansible
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y wireguard ansible
 
       - name: Setup SSH key for Ansible
         run: |
@@ -84,6 +90,9 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
+          # 🔒 Avoid host key prompt / slow SSH
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+          ANSIBLE_SSH_COMMON_ARGS: "-o StrictHostKeyChecking=no -o ConnectTimeout=30"
         run: |
           set -euo pipefail
 
@@ -93,8 +102,10 @@ jobs:
           echo "Ansible user: $SERVER_USER"
           date
 
-          ansible-playbook -i inventory/production/hosts.ini playbooks/deploy.yml \
+          # 🔒 Shell-level hard timeout for ansible itself (e.g. 20 mins)
+          timeout 1200 ansible-playbook -i inventory/production/hosts.ini playbooks/deploy.yml \
             -e "app_name=codesultan env=production tag=$IMAGE_TAG pat_token=$PAT_TOKEN github_actor=$GITHUB_ACTOR ansible_user=$SERVER_USER" \
+            -T 60 \
             -v
 
           echo "=== Deployment Complete ==="
