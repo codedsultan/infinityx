@@ -56,6 +56,18 @@ COPY . ${APP_BASE_DIR}
 # Copy built frontend assets
 COPY --from=node-builder /app/public/build ${APP_BASE_DIR}/public/build
 
+# ✅ Ensure Laravel storage + cache directories exist and are writable by www-data
+RUN mkdir -p \
+    ${APP_BASE_DIR}/storage/logs \
+    ${APP_BASE_DIR}/bootstrap/cache \
+    && chown -R www-data:www-data \
+    ${APP_BASE_DIR}/storage \
+    ${APP_BASE_DIR}/bootstrap/cache \
+    && chmod -R ug+rwx \
+    ${APP_BASE_DIR}/storage \
+    ${APP_BASE_DIR}/bootstrap/cache
+
+
 # Fix permissions using serversideup helper
 # RUN docker-php-serversideup-set-file-permissions \
 #     --owner www-data \
