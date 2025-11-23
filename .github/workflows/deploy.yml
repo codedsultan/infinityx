@@ -1,0 +1,125 @@
+# .github/workflows/deploy.yml
+# Deploy infinityx (codesultan) to production via WireGuard VPN, using Ansible from xurl-infra
+
+name: Deploy to Production
+
+on:
+  # Manual trigger - deploy any tag/commit
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (e.g., latest, v1.0.0, sha-abc123)"
+        required: true
+        default: "latest"
+        type: string
+
+  # Auto-trigger on version tags (optional)
+  push:
+    tags:
+      - "v*.*.*"
+
+env:
+  IMAGE_TAG: ${{ github.event.inputs.image_tag || github.ref_name }}
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout app repo (infinityx)
+        uses: actions/checkout@v4
+
+      - name: Checkout infra repo (xurl-infra)
+        uses: actions/checkout@v4
+        with:
+          repository: codedsultan/xurl-infra
+          path: infra
+          token: ${{ secrets.PAT_TOKEN }}
+
+      - name: Display deployment info
+        run: |
+          echo "### 🚀 Deploying CodeSultan (infinityx) to Production" >> $GITHUB_STEP_SUMMARY
+          echo "**App:** codesultan" >> $GITHUB_STEP_SUMMARY
+          echo "**Image Tag:** ${{ env.IMAGE_TAG }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployment Type:** Blue-Green" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Actor:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Install WireGuard & Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wireguard ansible
+
+      - name: Setup SSH key for Ansible
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/devops
+          chmod 600 ~/.ssh/devops
+        shell: bash
+
+      - name: Setup WireGuard VPN
+        run: |
+          echo "${{ secrets.WG_CLIENT_CONF }}" | sudo tee /etc/wireguard/wg0.conf
+          sudo chmod 600 /etc/wireguard/wg0.conf
+          sudo wg-quick up wg0
+          sleep 5
+
+      - name: Test VPS connectivity
+        run: |
+          echo "Testing connection to VPS..."
+          ping -c 2 ${{ secrets.VPS_WG_IP }}
+          nc -vz ${{ secrets.VPS_WG_IP }} 22 || true
+
+      - name: Write Ansible vault password file
+        working-directory: infra/ansible
+        run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ~/.ansible_vault_xurl
+          chmod 600 ~/.ansible_vault_xurl
+
+      - name: Deploy via Ansible from runner (Blue-Green)
+        working-directory: infra/ansible
+        env:
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+        run: |
+          set -euo pipefail
+
+          echo "=== Deploying codesultan (infinityx) to production ==="
+          echo "Image tag: $IMAGE_TAG"
+          echo "Deployment type: Blue-Green"
+          echo "Ansible user: $SERVER_USER"
+          date
+
+          ansible-playbook -i inventory/production/hosts.ini playbooks/deploy.yml \
+            -e "app_name=codesultan env=production tag=$IMAGE_TAG pat_token=$PAT_TOKEN github_actor=$GITHUB_ACTOR ansible_user=$SERVER_USER" \
+            -v
+
+          echo "=== Deployment Complete ==="
+          date
+
+      - name: Cleanup vault password file
+        if: always()
+        working-directory: infra/ansible
+        run: rm -f ~/.ansible_vault_xurl
+
+      - name: Cleanup WireGuard
+        if: always()
+        run: sudo wg-quick down wg0 || true
+
+      - name: Deployment summary
+        if: success()
+        run: |
+          echo "### ✅ Blue-Green Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🌐 **URL:** https://codesultan.xurl.fyi" >> $GITHUB_STEP_SUMMARY
+          echo "📦 **Image:** ghcr.io/codedsultan/infinityx:${{ env.IMAGE_TAG }}" >> $GITHUB_STEP_SUMMARY
+          echo "🔄 **Strategy:** Blue-Green (zero downtime)" >> $GITHUB_STEP_SUMMARY
+          echo "⏰ **Deployed at:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Next steps:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Check active slot on server" >> $GITHUB_STEP_SUMMARY
+          echo "- Verify application health" >> $GITHUB_STEP_SUMMARY
+          echo "- Monitor logs for any issues" >> $GITHUB_STEP_SUMMARY
