@@ -218,6 +218,87 @@ registerForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =>
 register.form = registerForm
 
 /**
+* @see \App\Http\Controllers\PortfolioController::home
+* @see app/Http/Controllers/PortfolioController.php:17
+* @route '/'
+*/
+export const home = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: home.url(options),
+    method: 'get',
+})
+
+home.definition = {
+    methods: ["get","head"],
+    url: '/',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\PortfolioController::home
+* @see app/Http/Controllers/PortfolioController.php:17
+* @route '/'
+*/
+home.url = (options?: RouteQueryOptions) => {
+    return home.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\PortfolioController::home
+* @see app/Http/Controllers/PortfolioController.php:17
+* @route '/'
+*/
+home.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: home.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\PortfolioController::home
+* @see app/Http/Controllers/PortfolioController.php:17
+* @route '/'
+*/
+home.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: home.url(options),
+    method: 'head',
+})
+
+/**
+* @see \App\Http\Controllers\PortfolioController::home
+* @see app/Http/Controllers/PortfolioController.php:17
+* @route '/'
+*/
+const homeForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: home.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\PortfolioController::home
+* @see app/Http/Controllers/PortfolioController.php:17
+* @route '/'
+*/
+homeForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: home.url(options),
+    method: 'get',
+})
+
+/**
+* @see \App\Http\Controllers\PortfolioController::home
+* @see app/Http/Controllers/PortfolioController.php:17
+* @route '/'
+*/
+homeForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    action: home.url({
+        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+            _method: 'HEAD',
+            ...(options?.query ?? options?.mergeQuery ?? {}),
+        }
+    }),
+    method: 'get',
+})
+
+home.form = homeForm
+
+/**
 * @see \App\Http\Controllers\Admin\AdminDashboardController::dashboard
 * @see app/Http/Controllers/Admin/AdminDashboardController.php:17
 * @route '/dashboard'
