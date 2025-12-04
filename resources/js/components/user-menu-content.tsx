@@ -10,7 +10,8 @@ import { logout } from '@/routes';
 import { edit } from '@/routes/profile';
 import { type User } from '@/types';
 import { Link, router } from '@inertiajs/react';
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut, Settings, Sun, Moon, Monitor } from 'lucide-react';
+import { useAppearance } from '@/hooks/use-appearance';
 
 interface UserMenuContentProps {
     user: User;
@@ -18,7 +19,7 @@ interface UserMenuContentProps {
 
 export function UserMenuContent({ user }: UserMenuContentProps) {
     const cleanup = useMobileNavigation();
-
+    const { appearance, updateAppearance } = useAppearance();
     const handleLogout = () => {
         cleanup();
         router.flushAll();
@@ -44,6 +45,27 @@ export function UserMenuContent({ user }: UserMenuContentProps) {
                         <Settings className="mr-2" />
                         Settings
                     </Link>
+                </DropdownMenuItem>
+            </DropdownMenuGroup>
+            {/* Appearance Toggle */}
+            <DropdownMenuGroup>
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                    {'Appearance'}
+                </DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => updateAppearance('light')}>
+                    <Sun className="mr-2 h-4 w-4" />
+                    {'Light'}
+                    {appearance === 'light' && <span className="ml-auto">✓</span>}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => updateAppearance('dark')}>
+                    <Moon className="mr-2 h-4 w-4" />
+                    {'Dark'}
+                    {appearance === 'dark' && <span className="ml-auto">✓</span>}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => updateAppearance('system')}>
+                    <Monitor className="mr-2 h-4 w-4" />
+                    {'System'}
+                    {appearance === 'system' && <span className="ml-auto">✓</span>}
                 </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
