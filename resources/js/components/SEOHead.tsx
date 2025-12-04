@@ -1,3 +1,4 @@
+import { SchemaType } from '@/types/schema';
 import { Head } from '@inertiajs/react';
 
 
@@ -10,7 +11,8 @@ interface SEOHeadProps {
     type?: string;
     author?: string;
     // schema?: any;
-    schema?: Record<string, any> | null;
+    // schema?: Record<string, any> | null;
+    schema?: SchemaType;
 }
 
 const SEOHead: React.FC<SEOHeadProps> = ({

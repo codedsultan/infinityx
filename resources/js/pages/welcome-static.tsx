@@ -106,7 +106,7 @@ const Portfolio = () => {
 
     const toggleDarkMode = () => setDarkMode(!darkMode);
 
-    const handleInputChange = (e: any) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 

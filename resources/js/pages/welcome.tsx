@@ -25,6 +25,7 @@ import AboutSummary from "@/components/about/AboutSummary";
 import EducationSection from "@/components/about/EducationSection";
 import EngineeringPractices from "@/components/about/EngineeringPractices";
 import { useAppearance } from "@/hooks/use-appearance";
+import { PersonSchema, PortfolioSchema, WebsiteSchema } from "@/types/schema";
 
 interface Project {
     id: number;
@@ -69,7 +70,11 @@ interface SEOInfo {
     //     website?: any;
     //     portfolio?: any;
     // };
-    schemas?: Record<string, any> | null;
+    schemas?: {
+        person?: PersonSchema;
+        website?: WebsiteSchema;
+        portfolio?: PortfolioSchema;
+    };
 }
 
 interface PortfolioProps {
