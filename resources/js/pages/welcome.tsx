@@ -64,11 +64,12 @@ interface SEOInfo {
     keywords?: string;
     image?: string;
     url?: string | null;
-    schemas?: {
-        person?: any;
-        website?: any;
-        portfolio?: any;
-    };
+    // schemas?: {
+    //     person?: any;
+    //     website?: any;
+    //     portfolio?: any;
+    // };
+    schemas?: Record<string, any> | null;
 }
 
 interface PortfolioProps {
@@ -169,8 +170,8 @@ const Portfolio: React.FC<PortfolioProps> = ({
                                         key={item}
                                         href={`#${item}`}
                                         className={`capitalize transition-colors ${activeSection === item
-                                                ? "text-[#F53003]"
-                                                : "text-muted-foreground hover:text-foreground"
+                                            ? "text-[#F53003]"
+                                            : "text-muted-foreground hover:text-foreground"
                                             }`}
                                     >
                                         {item}

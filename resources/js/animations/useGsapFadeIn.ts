@@ -1,4 +1,3 @@
-// /animations/useGsapFadeIn.ts
 import { useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -31,7 +30,12 @@ export const useGsapFadeIn = ({
         isDesktop: "(min-width: 769px)",
       },
       (context) => {
-        const { isMobile } = context.conditions as any;
+        // Proper type assertion for GSAP conditions
+        const conditions = context.conditions as { isMobile: boolean; isDesktop: boolean } | undefined;
+
+        if (!conditions) return;
+
+        const { isMobile } = conditions;
 
         gsap.from(selector, {
           scrollTrigger: {
@@ -45,7 +49,7 @@ export const useGsapFadeIn = ({
           duration,
           stagger,
           ease: "power2.out",
-          immediateRender: false, // Prevents initial flash
+          immediateRender: false,
         });
       }
     );

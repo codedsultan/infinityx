@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Head, router } from "@inertiajs/react";
 import AppLayout from "@/layouts/app-layout";
+import { LucideIcon } from "lucide-react";
 
 import type {
     ContactSummary,
@@ -326,7 +327,7 @@ function ActionButton({
     danger,
     onClick,
 }: {
-    icon: any;
+    icon: LucideIcon;
     label: string;
     danger?: boolean;
     onClick: () => void;

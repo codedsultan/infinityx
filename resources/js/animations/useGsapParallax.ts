@@ -1,4 +1,3 @@
-// /animations/useGsapParallax.ts
 import { useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -25,7 +24,12 @@ export const useGsapParallax = ({
         isDesktop: "(min-width: 769px)",
       },
       (context) => {
-        const { isMobile } = context.conditions as any;
+        // Proper type assertion for GSAP conditions
+        const conditions = context.conditions as { isMobile: boolean; isDesktop: boolean } | undefined;
+
+        if (!conditions) return;
+
+        const { isMobile } = conditions;
 
         if (!isMobile) {
           gsap.to(selector, {

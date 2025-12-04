@@ -9,7 +9,8 @@ interface SEOHeadProps {
     url?: string | null;   // <-- IMPORTANT FIX
     type?: string;
     author?: string;
-    schema?: any;
+    // schema?: any;
+    schema?: Record<string, any> | null;
 }
 
 const SEOHead: React.FC<SEOHeadProps> = ({
