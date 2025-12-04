@@ -38,7 +38,7 @@ class PortfolioController extends Controller
 
         $experiences = [
             [
-                'company' => 'Tech1m',
+                'company' => 'Tech1M',
                 'role' => 'Senior Software Engineer',
                 'location' => 'Lagos, Nigeria',
                 'period' => 'October 2022 - Present',
