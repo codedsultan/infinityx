@@ -46,6 +46,24 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            // 'type' => env('CAPTCHA_TYPE', 'none'),
+            // 'siteKey' => match (env('CAPTCHA_TYPE')) {
+            //     'recaptcha-v2' => env('RECAPTCHA_V2_SITE'),
+            //     'recaptcha-v3' => env('RECAPTCHA_V3_SITE'),
+            //     'hcaptcha'     => env('HCAPTCHA_SITE'),
+            //     'turnstile'    => env('TURNSTILE_SITE'),
+            //     default        => null
+            // }
+            'captcha' => [
+                'type' => env('CAPTCHA_TYPE', 'none'),
+                'siteKey' => match (env('CAPTCHA_TYPE')) {
+                    'recaptcha-v2' => env('RECAPTCHA_V2_SITE'),
+                    'recaptcha-v3' => env('RECAPTCHA_V3_SITE'),
+                    'hcaptcha'     => env('HCAPTCHA_SITE'),
+                    'turnstile'    => env('TURNSTILE_SITE'),
+                    default        => ''
+                }
+            ]
         ];
     }
 }

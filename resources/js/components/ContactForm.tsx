@@ -1,171 +1,285 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Send } from "lucide-react";
+import { useForm } from "@inertiajs/react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import InputError from "@/components/input-error";
+import { Spinner } from '@/components/ui/spinner';
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-type SubmitStatus = {
-    type: "success" | "error";
-    message: string;
-} | null;
+type CaptchaType = "recaptcha-v3" | "recaptcha-v2" | "hcaptcha" | "turnstile" | "none";
 
 interface ContactFormProps {
     className?: string;
     onSuccess?: () => void;
+    captchaType: CaptchaType;
+    captchaSiteKey: string;
+    captchaAction?: string;
 }
 
-const ContactForm: React.FC<ContactFormProps> = ({ className = "", onSuccess }) => {
-    const [formData, setFormData] = useState({
+export default function ContactForm({
+    className = "",
+    onSuccess,
+    captchaType,
+    captchaSiteKey,
+    captchaAction = "submit",
+}: ContactFormProps) {
+    const [captchaLoaded, setCaptchaLoaded] = useState(false);
+    const [v3Ready, setV3Ready] = useState(false);
+
+    const recaptchaV2Ref = useRef<HTMLDivElement>(null);
+    const hcaptchaRef = useRef<HTMLDivElement>(null);
+    const turnstileRef = useRef<HTMLDivElement>(null);
+    const widgetIdRef = useRef<any>(null);
+
+    const form = useForm({
         name: "",
         email: "",
-        message: ""
+        message: "",
+        captchaType,
+        captchaToken: "",
+        captchaAction,
     });
 
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [submitStatus, setSubmitStatus] = useState<SubmitStatus>(null);
+    /* -------------------------------------------------------------
+     * reCAPTCHA v3 Warm-Up Loop
+     * ------------------------------------------------------------- */
+    useEffect(() => {
+        if (captchaType !== "recaptcha-v3") return;
+        if (!captchaLoaded) return;
+        if (!window.grecaptcha) return;
 
-    const handleInputChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-    ) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-        if (submitStatus) setSubmitStatus(null);
-    };
+        const warmup = () => {
+            window.grecaptcha.ready(async () => {
+                try {
+                    const token = await window.grecaptcha.execute(captchaSiteKey, {
+                        action: "warmup",
+                    });
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setIsSubmitting(true);
-        setSubmitStatus(null);
-
-        try {
-            const response = await fetch("/contact", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN":
-                        document
-                            .querySelector('meta[name="csrf-token"]')
-                            ?.getAttribute("content") || ""
-                },
-                body: JSON.stringify(formData)
+                    if (token && token.length > 0) {
+                        setV3Ready(true);
+                    } else {
+                        setTimeout(warmup, 300);
+                    }
+                } catch {
+                    setTimeout(warmup, 300);
+                }
             });
+        };
 
+        setTimeout(warmup, 200);
+    }, [captchaLoaded, captchaType]);
 
-            const data = await response.json();
-            console.log("data", data);
+    /* -------------------------------------------------------------
+     * Load CAPTCHA scripts
+     * ------------------------------------------------------------- */
+    useEffect(() => {
+        if (captchaType === "none" || !captchaSiteKey) {
+            setCaptchaLoaded(true);
+            return;
+        }
 
-            if (response.ok) {
-                setSubmitStatus({
-                    type: "success",
-                    message: "Thank you for your message! I will get back to you soon."
-                });
+        const scriptId = `captcha-script-${captchaType}`;
+        if (document.getElementById(scriptId)) {
+            setCaptchaLoaded(true);
+            return;
+        }
 
-                setFormData({ name: "", email: "", message: "" });
-                onSuccess?.();
-            } else {
-                setSubmitStatus({
-                    type: "error",
-                    message: data.message || "Something went wrong. Please try again."
-                });
-            }
-        } catch {
-            // console.log("error", data.messaged);
-            setSubmitStatus({
-                type: "error",
-                message: "Network error. Please check your connection and try again."
+        const script = document.createElement("script");
+        script.id = scriptId;
+        script.async = true;
+        script.defer = true;
+
+        switch (captchaType) {
+            case "recaptcha-v3":
+                script.src = `https://www.google.com/recaptcha/api.js?render=${captchaSiteKey}`;
+                break;
+
+            case "recaptcha-v2":
+                script.src =
+                    "https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoaded&render=explicit";
+                break;
+
+            case "hcaptcha":
+                script.src = "https://js.hcaptcha.com/1/api.js";
+                break;
+
+            case "turnstile":
+                script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+                break;
+        }
+
+        script.onload = () => {
+            setCaptchaLoaded(true);
+            renderCaptcha();
+        };
+
+        document.body.appendChild(script);
+    }, [captchaType, captchaSiteKey]);
+
+    /* -------------------------------------------------------------
+     * Render CAPTCHA widgets (v2, hCaptcha, Turnstile)
+     * ------------------------------------------------------------- */
+    const renderCaptcha = () => {
+        if (captchaType === "recaptcha-v2" && recaptchaV2Ref.current && window.grecaptcha) {
+            widgetIdRef.current = window.grecaptcha.render(recaptchaV2Ref.current, {
+                sitekey: captchaSiteKey,
             });
-        } finally {
-            setIsSubmitting(false);
+        }
+
+        if (captchaType === "hcaptcha" && hcaptchaRef.current && window.hcaptcha) {
+            widgetIdRef.current = window.hcaptcha.render(hcaptchaRef.current, {
+                sitekey: captchaSiteKey,
+            });
+        }
+
+        if (captchaType === "turnstile" && turnstileRef.current && window.turnstile) {
+            widgetIdRef.current = window.turnstile.render(turnstileRef.current, {
+                sitekey: captchaSiteKey,
+            });
         }
     };
 
-    return (
-        <div
-            className={cn(
-                "p-6 rounded-xl bg-card border border-border shadow-md",
-                "transition-colors duration-300",
-                className
-            )}
-        >
-            {/* STATUS MESSAGE */}
-            {submitStatus && (
-                <div
-                    className={cn(
-                        "mb-4 p-3 rounded-lg text-sm",
-                        submitStatus.type === "success" &&
-                        "bg-green-500/15 text-green-600 dark:text-green-400",
-                        submitStatus.type === "error" &&
-                        "bg-red-500/15 text-red-600 dark:text-red-400"
-                    )}
-                >
-                    {submitStatus.message}
-                </div>
-            )}
+    useEffect(() => {
+        if (captchaLoaded) renderCaptcha();
+    }, [captchaLoaded]);
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+    /* -------------------------------------------------------------
+     * Retrieve token for the correct provider
+     * ------------------------------------------------------------- */
+    const executeV3 = async (): Promise<string | null> => {
+        if (!window.grecaptcha) return null;
+
+        await new Promise((resolve) => window.grecaptcha.ready(resolve));
+
+        const token = await window.grecaptcha.execute(captchaSiteKey, {
+            action: captchaAction,
+        });
+
+        return token || null;
+    };
+
+    const getCaptchaToken = async (): Promise<string | null> => {
+        switch (captchaType) {
+            case "recaptcha-v3":
+                return await executeV3();
+
+            case "recaptcha-v2":
+                return window.grecaptcha?.getResponse(widgetIdRef.current);
+
+            case "hcaptcha":
+                return window.hcaptcha?.getResponse(widgetIdRef.current);
+
+            case "turnstile":
+                return window.turnstile?.getResponse(widgetIdRef.current);
+
+            default:
+                return null;
+        }
+    };
+
+    /* -------------------------------------------------------------
+     * Submit handler (with transform() fix)
+     * ------------------------------------------------------------- */
+    const submit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        const token = await getCaptchaToken();
+        console.log("Retrieved CAPTCHA token:", token);
+
+        if (captchaType === "recaptcha-v3" && !token) {
+            toast.error("Security verification failed. Please try again.");
+            return;
+        }
+
+        // ❗ Fix: Use transform() to ensure token is sent IMMEDIATELY
+        form.transform((data) => ({
+            ...data,
+            captchaToken: token,
+            captchaType,
+            captchaAction,
+        }));
+
+        form.post("/contact", {
+            preserveScroll: true,
+
+            onSuccess: () => {
+                toast.success("Your message has been sent successfully!");
+                form.reset("name", "email", "message");
+                onSuccess?.();
+            },
+
+            onError: () => {
+                toast.error("Please fix the errors and try again.");
+            },
+        });
+    };
+
+    /* -------------------------------------------------------------
+     * Render
+     * ------------------------------------------------------------- */
+    return (
+        <div className={cn("p-6 rounded-xl bg-card border border-border shadow-md", className)}>
+            <form onSubmit={submit} className="space-y-4">
                 {/* NAME */}
-                <div className="space-y-1">
+                <div>
                     <label className="text-sm font-medium">Name</label>
                     <Input
                         name="name"
-                        value={formData.name}
-                        onChange={handleInputChange}
-                        disabled={isSubmitting}
-                        placeholder="Your name"
-                        required
-                        className="bg-background text-foreground placeholder:text-muted-foreground"
+                        value={form.data.name}
+                        onChange={(e) => form.setData("name", e.target.value)}
                     />
+                    <InputError message={form.errors.name} />
                 </div>
 
                 {/* EMAIL */}
-                <div className="space-y-1">
+                <div>
                     <label className="text-sm font-medium">Email</label>
                     <Input
                         type="email"
                         name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        disabled={isSubmitting}
-                        placeholder="you@email.com"
-                        required
-                        className="bg-background text-foreground placeholder:text-muted-foreground"
+                        value={form.data.email}
+                        onChange={(e) => form.setData("email", e.target.value)}
                     />
+                    <InputError message={form.errors.email} />
                 </div>
 
                 {/* MESSAGE */}
-                <div className="space-y-1">
+                <div>
                     <label className="text-sm font-medium">Message</label>
                     <Textarea
                         name="message"
-                        value={formData.message}
-                        onChange={handleInputChange}
-                        disabled={isSubmitting}
                         rows={5}
-                        placeholder="Your message..."
-                        required
-                        className="bg-background text-foreground placeholder:text-muted-foreground"
+                        value={form.data.message}
+                        onChange={(e) => form.setData("message", e.target.value)}
                     />
+                    <InputError message={form.errors.message} />
                 </div>
 
-                {/* SUBMIT BUTTON */}
+                {/* CAPTCHA WIDGETS */}
+                {captchaType === "recaptcha-v2" && <div ref={recaptchaV2Ref} />}
+                {captchaType === "hcaptcha" && <div ref={hcaptchaRef} />}
+                {captchaType === "turnstile" && <div ref={turnstileRef} />}
+
+                <InputError message={form.errors.captchaToken} />
+
+                {/* SUBMIT */}
                 <Button
                     type="submit"
-                    disabled={isSubmitting}
-                    className="w-full p-6 flex items-center gap-2 bg-[#F53003] hover:bg-[#d42a02]"
+                    disabled={
+                        form.processing ||
+                        !captchaLoaded ||
+                        (captchaType === "recaptcha-v3" && !v3Ready)
+                    }
+                    className="text-white w-full p-6 flex items-center gap-2 bg-[#F53003] hover:bg-[#d42a02]"
                 >
-                    {isSubmitting ? (
-                        <>
-                            <span className="animate-spin">⏳</span> Sending...
-                        </>
-                    ) : (
-                        <>
-                            <Send size={18} /> Send Message
-                        </>
-                    )}
+                    {/* {form.processing && <span className="animate-spin">⏳</span>} */}
+                    {form.processing ? <Spinner /> : <Send size={18} />}
+                    Send Message
                 </Button>
             </form>
         </div>
     );
-};
-
-export default ContactForm;
+}

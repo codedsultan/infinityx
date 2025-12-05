@@ -82,7 +82,7 @@ index.form = indexForm
 
 /**
 * @see \App\Http\Controllers\PortfolioController::downloadCV
-* @see app/Http/Controllers/PortfolioController.php:119
+* @see app/Http/Controllers/PortfolioController.php:120
 * @route '/download-cv'
 */
 export const downloadCV = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -97,7 +97,7 @@ downloadCV.definition = {
 
 /**
 * @see \App\Http\Controllers\PortfolioController::downloadCV
-* @see app/Http/Controllers/PortfolioController.php:119
+* @see app/Http/Controllers/PortfolioController.php:120
 * @route '/download-cv'
 */
 downloadCV.url = (options?: RouteQueryOptions) => {
@@ -106,7 +106,7 @@ downloadCV.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\PortfolioController::downloadCV
-* @see app/Http/Controllers/PortfolioController.php:119
+* @see app/Http/Controllers/PortfolioController.php:120
 * @route '/download-cv'
 */
 downloadCV.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -116,7 +116,7 @@ downloadCV.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 
 /**
 * @see \App\Http\Controllers\PortfolioController::downloadCV
-* @see app/Http/Controllers/PortfolioController.php:119
+* @see app/Http/Controllers/PortfolioController.php:120
 * @route '/download-cv'
 */
 downloadCV.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -126,7 +126,7 @@ downloadCV.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
 /**
 * @see \App\Http\Controllers\PortfolioController::downloadCV
-* @see app/Http/Controllers/PortfolioController.php:119
+* @see app/Http/Controllers/PortfolioController.php:120
 * @route '/download-cv'
 */
 const downloadCVForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -136,7 +136,7 @@ const downloadCVForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'>
 
 /**
 * @see \App\Http\Controllers\PortfolioController::downloadCV
-* @see app/Http/Controllers/PortfolioController.php:119
+* @see app/Http/Controllers/PortfolioController.php:120
 * @route '/download-cv'
 */
 downloadCVForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -146,7 +146,7 @@ downloadCVForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> =
 
 /**
 * @see \App\Http\Controllers\PortfolioController::downloadCV
-* @see app/Http/Controllers/PortfolioController.php:119
+* @see app/Http/Controllers/PortfolioController.php:120
 * @route '/download-cv'
 */
 downloadCVForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

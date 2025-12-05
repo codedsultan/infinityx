@@ -89,7 +89,8 @@ class PortfolioController extends Controller
             'projects' => $projects,
             'experiences' => $experiences,
             'skills' => $skills,
-            'profileImage' => asset('storage/profile/codesultan/olusegun-ibraheem.jpg'),
+            // 'profileImage' => asset('storage/profile/codesultan/olusegun-ibraheem.jpg'),
+            'profileImage' => asset('codesultan/static/Olusegun-Ibraheem.jpg'),
             'contactInfo' => [
                 'email' => 'codesultan369@gmail.com',
                 'phone' => '+234-813-796-2936',
@@ -118,7 +119,9 @@ class PortfolioController extends Controller
      */
     public function downloadCV(): BinaryFileResponse
     {
-        $filePath = storage_path('app/public/cv/codesultan/Olusegun_Ibraheem_CV.pdf');
+        // $filePath = storage_path('app/public/cv/codesultan/Olusegun_Ibraheem_CV.pdf');
+        $filePath = public_path('codesultan/download/Olusegun-Ibraheem-CV.pdf');
+
 
         if (!file_exists($filePath)) {
             abort(404, 'CV not found');
