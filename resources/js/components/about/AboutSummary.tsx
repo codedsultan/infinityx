@@ -20,10 +20,10 @@ const AboutSummary = () => {
             </p>
 
             {/* Metrics */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-2 gap-3 mb-8">
                 {[
                     { value: "7+", label: "Years Experience" },
-                    { value: "50+", label: "Projects Delivered" },
+                    // { value: "50+", label: "Projects Delivered" },
                     { value: "100%", label: "Client Satisfaction" }
                 ].map((metric, idx) => (
                     <div key={idx} className="text-center p-3 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-[#F53003] transition-colors">
