@@ -4,17 +4,23 @@
 /public/build
 /public/hot
 /public/storage
+
 !public/codesultan/
 !public/codesultan/**
+!public/cv/
+!public/profile/
 
 # /resources/js/actions
 # /resources/js/routes
 # /resources/js/wayfinder
-!/storage/app/public/cv/codesultan/Olusegun_Ibraheem_CV.pdf
-!/storage/app/public/profile/codesultan/olusegun-ibraheem.jpg
+
 /storage/*.key
 /storage/pail
 storage/certs/ca.pem
+
+# !/storage/app/public/cv/codesultan/Olusegun_Ibraheem_CV.pdf
+# !/storage/app/public/profile/codesultan/olusegun-ibraheem.jpg
+
 /vendor
 .DS_Store
 .env
