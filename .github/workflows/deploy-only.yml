@@ -1,0 +1,48 @@
+name: Deploy Only (Trigger Infra)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      tag:
+        description: "Docker image tag to deploy (e.g. develop-abc123, <sha>, latest)"
+        required: true
+        default: "develop"
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger infra deployment
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.INFRA_REPO_PAT }}
+          repository: codedsultan/x-infra
+          event-type: deploy-app
+          client-payload: |
+            {
+              "app_name": "codesultan",
+              "environment": "${{ inputs.environment }}",
+              "tag": "${{ inputs.tag }}",
+              "commit_sha": "${{ github.sha }}",
+              "triggered_by": "${{ github.actor }}",
+              "repo": "${{ github.repository }}",
+              "run_id": "${{ github.run_id }}"
+            }
+
+      - name: Summary
+        run: |
+          echo "## 🚀 Infra deployment triggered" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **App:** codesultan" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** \`${{ inputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit SHA:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Infra runs:** https://github.com/codedsultan/x-infra/actions" >> $GITHUB_STEP_SUMMARY

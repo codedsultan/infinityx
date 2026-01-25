@@ -126,4 +126,4 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Environment:** ${{ needs.build-and-push.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Tag:** \`${{ needs.build-and-push.outputs.image_tag }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Track progress:** https://github.com/codedsultan/xurl-infra-2/actions" >> $GITHUB_STEP_SUMMARY
+          echo "- **Track progress:** https://github.com/codedsultan/x-infra/actions" >> $GITHUB_STEP_SUMMARY
