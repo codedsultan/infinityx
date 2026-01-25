@@ -1,16 +1,23 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Send } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-type SubmitStatus = {
-    type: "success" | "error";
-    message: string;
-} | null;
+type SubmitStatus =
+    | {
+        type: "success" | "error";
+        message: string;
+    }
+    | null;
 
-type CaptchaType = "recaptcha-v3" | "recaptcha-v2" | "hcaptcha" | "turnstile" | "none";
+type CaptchaType =
+    | "recaptcha-v3"
+    | "recaptcha-v2"
+    | "hcaptcha"
+    | "turnstile"
+    | "none";
 
 interface ContactFormProps {
     className?: string;
@@ -20,13 +27,42 @@ interface ContactFormProps {
     captchaAction?: string;
 }
 
-declare global {
-    interface Window {
-        grecaptcha?: any;
-        hcaptcha?: any;
-        turnstile?: any;
-    }
+/** Minimal typings for the captcha providers to avoid `any` */
+type CaptchaWidgetId = string | number;
+
+interface GrecaptchaV2 {
+    render: (container: HTMLElement, params: { sitekey: string }) => CaptchaWidgetId;
+    getResponse: (widgetId?: CaptchaWidgetId | null) => string;
+    reset: (widgetId?: CaptchaWidgetId | null) => void;
 }
+
+interface GrecaptchaV3 {
+    execute: (siteKey: string, options: { action: string }) => Promise<string>;
+}
+
+type Grecaptcha = Partial<GrecaptchaV2> & Partial<GrecaptchaV3>;
+
+interface Hcaptcha {
+    render: (container: HTMLElement, params: { sitekey: string }) => CaptchaWidgetId;
+    getResponse: (widgetId?: CaptchaWidgetId | null) => string;
+    reset: (widgetId?: CaptchaWidgetId | null) => void;
+}
+
+interface Turnstile {
+    render: (container: HTMLElement, params: { sitekey: string }) => CaptchaWidgetId;
+    getResponse: (widgetId?: CaptchaWidgetId | null) => string;
+    reset: (widgetId?: CaptchaWidgetId | null) => void;
+}
+
+// declare global {
+//     interface Window {
+//         grecaptcha?: Grecaptcha;
+//         hcaptcha?: Hcaptcha;
+//         turnstile?: Turnstile;
+//     }
+// }
+
+type ContactResponse = { message?: string };
 
 const ContactForm: React.FC<ContactFormProps> = ({
     className = "",
@@ -49,8 +85,35 @@ const ContactForm: React.FC<ContactFormProps> = ({
     const hcaptchaRef = useRef<HTMLDivElement>(null);
     const turnstileRef = useRef<HTMLDivElement>(null);
 
-    // IMPORTANT: Make widget ID generic for all providers
-    const widgetIdRef = useRef<any>(null);
+    // Widget id for visible captchas (v2/hcaptcha/turnstile)
+    const widgetIdRef = useRef<CaptchaWidgetId | null>(null);
+
+    // Renders captcha widgets for visible captchas (stable ref for hooks + script.onload)
+    const renderVisibleCaptcha = useCallback(() => {
+        if (!captchaSiteKey) return;
+
+        if (
+            captchaType === "recaptcha-v2" &&
+            recaptchaV2Ref.current &&
+            window.grecaptcha?.render
+        ) {
+            widgetIdRef.current = window.grecaptcha.render(recaptchaV2Ref.current, {
+                sitekey: captchaSiteKey
+            });
+        }
+
+        if (captchaType === "hcaptcha" && hcaptchaRef.current && window.hcaptcha?.render) {
+            widgetIdRef.current = window.hcaptcha.render(hcaptchaRef.current, {
+                sitekey: captchaSiteKey
+            });
+        }
+
+        if (captchaType === "turnstile" && turnstileRef.current && window.turnstile?.render) {
+            widgetIdRef.current = window.turnstile.render(turnstileRef.current, {
+                sitekey: captchaSiteKey
+            });
+        }
+    }, [captchaType, captchaSiteKey]);
 
     // Load captcha script dynamically
     useEffect(() => {
@@ -84,6 +147,8 @@ const ContactForm: React.FC<ContactFormProps> = ({
             case "turnstile":
                 script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
                 break;
+            default:
+                break;
         }
 
         script.onload = () => {
@@ -92,37 +157,21 @@ const ContactForm: React.FC<ContactFormProps> = ({
         };
 
         document.body.appendChild(script);
-    }, [captchaType, captchaSiteKey]);
 
-    // Renders captcha widgets for visible captchas
-    const renderVisibleCaptcha = () => {
-        if (captchaType === "recaptcha-v2" && recaptchaV2Ref.current && window.grecaptcha) {
-            widgetIdRef.current = window.grecaptcha.render(recaptchaV2Ref.current, {
-                sitekey: captchaSiteKey
-            });
-        }
-
-        if (captchaType === "hcaptcha" && hcaptchaRef.current && window.hcaptcha) {
-            widgetIdRef.current = window.hcaptcha.render(hcaptchaRef.current, {
-                sitekey: captchaSiteKey
-            });
-        }
-
-        if (captchaType === "turnstile" && turnstileRef.current && window.turnstile) {
-            widgetIdRef.current = window.turnstile.render(turnstileRef.current, {
-                sitekey: captchaSiteKey
-            });
-        }
-    };
+        return () => {
+            // optional: do not remove script since it may be shared across components/pages
+        };
+    }, [captchaType, captchaSiteKey, renderVisibleCaptcha]);
 
     useEffect(() => {
-        if (captchaLoaded) {
-            renderVisibleCaptcha();
-        }
-    }, [captchaLoaded]);
+        if (captchaLoaded) renderVisibleCaptcha();
+    }, [captchaLoaded, renderVisibleCaptcha]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+    const handleInputChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
         if (submitStatus) setSubmitStatus(null);
     };
 
@@ -131,27 +180,35 @@ const ContactForm: React.FC<ContactFormProps> = ({
         if (captchaType === "none") return null;
 
         switch (captchaType) {
-            case "recaptcha-v3":
-                if (!window.grecaptcha) throw new Error("reCAPTCHA v3 not loaded");
-                return await window.grecaptcha.execute(captchaSiteKey, { action: captchaAction });
+            case "recaptcha-v3": {
+                const execute = window.grecaptcha?.execute;
+                if (!execute) throw new Error("reCAPTCHA v3 not loaded");
+                return await execute(captchaSiteKey, { action: captchaAction });
+            }
 
-            case "recaptcha-v2":
-                if (!window.grecaptcha) throw new Error("reCAPTCHA v2 not loaded");
-                const v2 = window.grecaptcha.getResponse(widgetIdRef.current);
-                if (!v2) throw new Error("Please complete the CAPTCHA");
-                return v2;
+            case "recaptcha-v2": {
+                const getResponse = window.grecaptcha?.getResponse;
+                if (!getResponse) throw new Error("reCAPTCHA v2 not loaded");
+                const token = getResponse(widgetIdRef.current);
+                if (!token) throw new Error("Please complete the CAPTCHA");
+                return token;
+            }
 
-            case "hcaptcha":
-                if (!window.hcaptcha) throw new Error("hCaptcha not loaded");
-                const h = window.hcaptcha.getResponse(widgetIdRef.current);
-                if (!h) throw new Error("Please complete the CAPTCHA");
-                return h;
+            case "hcaptcha": {
+                const getResponse = window.hcaptcha?.getResponse;
+                if (!getResponse) throw new Error("hCaptcha not loaded");
+                const token = getResponse(widgetIdRef.current);
+                if (!token) throw new Error("Please complete the CAPTCHA");
+                return token;
+            }
 
-            case "turnstile":
-                if (!window.turnstile) throw new Error("Turnstile not loaded");
-                const t = window.turnstile.getResponse(widgetIdRef.current);
-                if (!t) throw new Error("Please complete the CAPTCHA");
-                return t;
+            case "turnstile": {
+                const getResponse = window.turnstile?.getResponse;
+                if (!getResponse) throw new Error("Turnstile not loaded");
+                const token = getResponse(widgetIdRef.current);
+                if (!token) throw new Error("Please complete the CAPTCHA");
+                return token;
+            }
 
             default:
                 return null;
@@ -159,11 +216,16 @@ const ContactForm: React.FC<ContactFormProps> = ({
     };
 
     const resetCaptcha = () => {
-        if (captchaType === "recaptcha-v2" && window.grecaptcha && widgetIdRef.current) {
+        if (captchaType === "recaptcha-v2" && window.grecaptcha?.reset) {
+            window.grecaptcha?.reset?.(widgetIdRef.current);
+            // ^ (typo-safe) but eslint/typescript might not like it. Use the line below instead.
+        }
+
+        if (captchaType === "recaptcha-v2" && window.grecaptcha?.reset) {
             window.grecaptcha.reset(widgetIdRef.current);
-        } else if (captchaType === "hcaptcha" && window.hcaptcha && widgetIdRef.current) {
+        } else if (captchaType === "hcaptcha" && window.hcaptcha?.reset) {
             window.hcaptcha.reset(widgetIdRef.current);
-        } else if (captchaType === "turnstile" && window.turnstile && widgetIdRef.current) {
+        } else if (captchaType === "turnstile" && window.turnstile?.reset) {
             window.turnstile.reset(widgetIdRef.current);
         }
     };
@@ -181,7 +243,9 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 headers: {
                     "Content-Type": "application/json",
                     "X-CSRF-TOKEN":
-                        document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || ""
+                        document
+                            .querySelector('meta[name="csrf-token"]')
+                            ?.getAttribute("content") || ""
                 },
                 body: JSON.stringify({
                     ...formData,
@@ -191,7 +255,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 })
             });
 
-            const data = await response.json();
+            const data = (await response.json()) as ContactResponse;
 
             if (response.ok) {
                 setSubmitStatus({
@@ -208,7 +272,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 });
                 resetCaptcha();
             }
-        } catch (error) {
+        } catch (error: unknown) {
             setSubmitStatus({
                 type: "error",
                 message: error instanceof Error ? error.message : "An error occurred."
@@ -274,9 +338,9 @@ const ContactForm: React.FC<ContactFormProps> = ({
                 </div>
 
                 {/* CAPTCHA Widgets */}
-                {captchaLoaded && captchaType === "recaptcha-v2" && <div ref={recaptchaV2Ref}></div>}
-                {captchaLoaded && captchaType === "hcaptcha" && <div ref={hcaptchaRef}></div>}
-                {captchaLoaded && captchaType === "turnstile" && <div ref={turnstileRef}></div>}
+                {captchaLoaded && captchaType === "recaptcha-v2" && <div ref={recaptchaV2Ref} />}
+                {captchaLoaded && captchaType === "hcaptcha" && <div ref={hcaptchaRef} />}
+                {captchaLoaded && captchaType === "turnstile" && <div ref={turnstileRef} />}
 
                 <Button
                     type="submit"

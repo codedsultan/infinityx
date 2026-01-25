@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Send } from "lucide-react";
 import { useForm } from "@inertiajs/react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import InputError from "@/components/input-error";
-import { Spinner } from '@/components/ui/spinner';
+import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +17,45 @@ interface ContactFormProps {
     captchaType: CaptchaType;
     captchaSiteKey: string;
     captchaAction?: string;
+}
+
+/** Minimal typings to avoid `any` */
+type CaptchaWidgetId = string | number;
+
+interface GrecaptchaV2 {
+    render: (container: HTMLElement, params: { sitekey: string }) => CaptchaWidgetId;
+    getResponse: (widgetId?: CaptchaWidgetId | null) => string;
+    reset: (widgetId?: CaptchaWidgetId | null) => void;
+    ready: (cb: () => void) => void;
+}
+
+interface GrecaptchaV3 {
+    execute: (siteKey: string, options: { action: string }) => Promise<string>;
+    ready: (cb: () => void) => void;
+}
+
+type Grecaptcha = Partial<GrecaptchaV2> & Partial<GrecaptchaV3>;
+
+interface Hcaptcha {
+    render: (container: HTMLElement, params: { sitekey: string }) => CaptchaWidgetId;
+    getResponse: (widgetId?: CaptchaWidgetId | null) => string;
+    reset: (widgetId?: CaptchaWidgetId | null) => void;
+}
+
+interface Turnstile {
+    render: (container: HTMLElement, params: { sitekey: string }) => CaptchaWidgetId;
+    getResponse: (widgetId?: CaptchaWidgetId | null) => string;
+    reset: (widgetId?: CaptchaWidgetId | null) => void;
+}
+
+declare global {
+    interface Window {
+        grecaptcha?: Grecaptcha;
+        hcaptcha?: Hcaptcha;
+        turnstile?: Turnstile;
+        // If you ever rely on explicit onload callbacks, type them here:
+        // onRecaptchaLoaded?: () => void;
+    }
 }
 
 export default function ContactForm({
@@ -32,7 +71,7 @@ export default function ContactForm({
     const recaptchaV2Ref = useRef<HTMLDivElement>(null);
     const hcaptchaRef = useRef<HTMLDivElement>(null);
     const turnstileRef = useRef<HTMLDivElement>(null);
-    const widgetIdRef = useRef<any>(null);
+    const widgetIdRef = useRef<CaptchaWidgetId | null>(null);
 
     const form = useForm({
         name: "",
@@ -44,33 +83,33 @@ export default function ContactForm({
     });
 
     /* -------------------------------------------------------------
-     * reCAPTCHA v3 Warm-Up Loop
+     * Render CAPTCHA widgets (v2, hCaptcha, Turnstile) — stable callback
      * ------------------------------------------------------------- */
-    useEffect(() => {
-        if (captchaType !== "recaptcha-v3") return;
-        if (!captchaLoaded) return;
-        if (!window.grecaptcha) return;
+    const renderCaptcha = useCallback(() => {
+        if (!captchaSiteKey) return;
 
-        const warmup = () => {
-            window.grecaptcha.ready(async () => {
-                try {
-                    const token = await window.grecaptcha.execute(captchaSiteKey, {
-                        action: "warmup",
-                    });
-
-                    if (token && token.length > 0) {
-                        setV3Ready(true);
-                    } else {
-                        setTimeout(warmup, 300);
-                    }
-                } catch {
-                    setTimeout(warmup, 300);
-                }
+        if (
+            captchaType === "recaptcha-v2" &&
+            recaptchaV2Ref.current &&
+            window.grecaptcha?.render
+        ) {
+            widgetIdRef.current = window.grecaptcha.render(recaptchaV2Ref.current, {
+                sitekey: captchaSiteKey,
             });
-        };
+        }
 
-        setTimeout(warmup, 200);
-    }, [captchaLoaded, captchaType]);
+        if (captchaType === "hcaptcha" && hcaptchaRef.current && window.hcaptcha?.render) {
+            widgetIdRef.current = window.hcaptcha.render(hcaptchaRef.current, {
+                sitekey: captchaSiteKey,
+            });
+        }
+
+        if (captchaType === "turnstile" && turnstileRef.current && window.turnstile?.render) {
+            widgetIdRef.current = window.turnstile.render(turnstileRef.current, {
+                sitekey: captchaSiteKey,
+            });
+        }
+    }, [captchaSiteKey, captchaType]);
 
     /* -------------------------------------------------------------
      * Load CAPTCHA scripts
@@ -96,18 +135,16 @@ export default function ContactForm({
             case "recaptcha-v3":
                 script.src = `https://www.google.com/recaptcha/api.js?render=${captchaSiteKey}`;
                 break;
-
             case "recaptcha-v2":
-                script.src =
-                    "https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoaded&render=explicit";
+                script.src = "https://www.google.com/recaptcha/api.js?render=explicit";
                 break;
-
             case "hcaptcha":
                 script.src = "https://js.hcaptcha.com/1/api.js";
                 break;
-
             case "turnstile":
                 script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+                break;
+            default:
                 break;
         }
 
@@ -117,87 +154,115 @@ export default function ContactForm({
         };
 
         document.body.appendChild(script);
-    }, [captchaType, captchaSiteKey]);
-
-    /* -------------------------------------------------------------
-     * Render CAPTCHA widgets (v2, hCaptcha, Turnstile)
-     * ------------------------------------------------------------- */
-    const renderCaptcha = () => {
-        if (captchaType === "recaptcha-v2" && recaptchaV2Ref.current && window.grecaptcha) {
-            widgetIdRef.current = window.grecaptcha.render(recaptchaV2Ref.current, {
-                sitekey: captchaSiteKey,
-            });
-        }
-
-        if (captchaType === "hcaptcha" && hcaptchaRef.current && window.hcaptcha) {
-            widgetIdRef.current = window.hcaptcha.render(hcaptchaRef.current, {
-                sitekey: captchaSiteKey,
-            });
-        }
-
-        if (captchaType === "turnstile" && turnstileRef.current && window.turnstile) {
-            widgetIdRef.current = window.turnstile.render(turnstileRef.current, {
-                sitekey: captchaSiteKey,
-            });
-        }
-    };
+    }, [captchaType, captchaSiteKey, renderCaptcha]);
 
     useEffect(() => {
         if (captchaLoaded) renderCaptcha();
-    }, [captchaLoaded]);
+    }, [captchaLoaded, renderCaptcha]);
+
+    /* -------------------------------------------------------------
+     * reCAPTCHA v3 Warm-Up Loop
+     * ------------------------------------------------------------- */
+    useEffect(() => {
+        if (captchaType !== "recaptcha-v3") return;
+        if (!captchaLoaded) return;
+
+        const grecaptcha = window.grecaptcha;
+        const ready = grecaptcha?.ready;
+        const execute = grecaptcha?.execute;
+
+        if (!grecaptcha || !ready || !execute) return;
+
+        let cancelled = false;
+
+        const warmup = () => {
+            ready(() => {
+                void (async () => {
+                    try {
+                        const token = await execute(captchaSiteKey, { action: "warmup" });
+                        if (cancelled) return;
+
+                        if (token && token.length > 0) {
+                            setV3Ready(true);
+                        } else {
+                            setTimeout(warmup, 300);
+                        }
+                    } catch {
+                        if (!cancelled) setTimeout(warmup, 300);
+                    }
+                })();
+            });
+        };
+
+        const id = window.setTimeout(warmup, 200);
+
+        return () => {
+            cancelled = true;
+            window.clearTimeout(id);
+        };
+    }, [captchaLoaded, captchaSiteKey, captchaType]);
+
 
     /* -------------------------------------------------------------
      * Retrieve token for the correct provider
      * ------------------------------------------------------------- */
-    const executeV3 = async (): Promise<string | null> => {
-        if (!window.grecaptcha) return null;
+    const executeV3 = useCallback(async (): Promise<string | null> => {
+        const grecaptcha = window.grecaptcha;
+        const ready = grecaptcha?.ready;
+        const execute = grecaptcha?.execute;
 
-        await new Promise((resolve) => window.grecaptcha.ready(resolve));
+        if (!grecaptcha || !ready || !execute) return null;
 
-        const token = await window.grecaptcha.execute(captchaSiteKey, {
-            action: captchaAction,
-        });
+        await new Promise<void>((resolve) => ready(resolve));
 
+        const token = await execute(captchaSiteKey, { action: captchaAction });
         return token || null;
-    };
+    }, [captchaAction, captchaSiteKey]);
 
-    const getCaptchaToken = async (): Promise<string | null> => {
+    const getCaptchaToken = useCallback(async (): Promise<string | null> => {
         switch (captchaType) {
             case "recaptcha-v3":
                 return await executeV3();
 
-            case "recaptcha-v2":
-                return window.grecaptcha?.getResponse(widgetIdRef.current);
+            case "recaptcha-v2": {
+                const getResponse = window.grecaptcha?.getResponse;
+                if (!getResponse) return null;
+                return getResponse(widgetIdRef.current);
+            }
 
-            case "hcaptcha":
-                return window.hcaptcha?.getResponse(widgetIdRef.current);
+            case "hcaptcha": {
+                const getResponse = window.hcaptcha?.getResponse;
+                if (!getResponse) return null;
+                return getResponse(widgetIdRef.current);
+            }
 
-            case "turnstile":
-                return window.turnstile?.getResponse(widgetIdRef.current);
+            case "turnstile": {
+                const getResponse = window.turnstile?.getResponse;
+                if (!getResponse) return null;
+                return getResponse(widgetIdRef.current);
+            }
 
             default:
                 return null;
         }
-    };
+    }, [captchaType, executeV3]);
 
     /* -------------------------------------------------------------
-     * Submit handler (with transform() fix)
+     * Submit handler
      * ------------------------------------------------------------- */
-    const submit = async (e: React.FormEvent) => {
+    const submit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         const token = await getCaptchaToken();
-        console.log("Retrieved CAPTCHA token:", token);
 
         if (captchaType === "recaptcha-v3" && !token) {
             toast.error("Security verification failed. Please try again.");
             return;
         }
 
-        // ❗ Fix: Use transform() to ensure token is sent IMMEDIATELY
         form.transform((data) => ({
             ...data,
-            captchaToken: token,
+            captchaToken: token ?? "",
             captchaType,
             captchaAction,
         }));
@@ -217,43 +282,43 @@ export default function ContactForm({
         });
     };
 
-    /* -------------------------------------------------------------
-     * Render
-     * ------------------------------------------------------------- */
     return (
         <div className={cn("p-6 rounded-xl bg-card border border-border shadow-md", className)}>
             <form onSubmit={submit} className="space-y-4">
-                {/* NAME */}
                 <div>
                     <label className="text-sm font-medium">Name</label>
                     <Input
                         name="name"
                         value={form.data.name}
-                        onChange={(e) => form.setData("name", e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            form.setData("name", e.target.value)
+                        }
                     />
                     <InputError message={form.errors.name} />
                 </div>
 
-                {/* EMAIL */}
                 <div>
                     <label className="text-sm font-medium">Email</label>
                     <Input
                         type="email"
                         name="email"
                         value={form.data.email}
-                        onChange={(e) => form.setData("email", e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            form.setData("email", e.target.value)
+                        }
                     />
                     <InputError message={form.errors.email} />
                 </div>
 
-                {/* MESSAGE */}
                 <div>
                     <label className="text-sm font-medium">Message</label>
                     <Textarea
                         name="message"
                         rows={5}
                         value={form.data.message}
-                        onChange={(e) => form.setData("message", e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                            form.setData("message", e.target.value)
+                        }
                     />
                     <InputError message={form.errors.message} />
                 </div>
@@ -265,7 +330,6 @@ export default function ContactForm({
 
                 <InputError message={form.errors.captchaToken} />
 
-                {/* SUBMIT */}
                 <Button
                     type="submit"
                     disabled={
@@ -275,7 +339,6 @@ export default function ContactForm({
                     }
                     className="text-white w-full p-6 flex items-center gap-2 bg-[#F53003] hover:bg-[#d42a02]"
                 >
-                    {/* {form.processing && <span className="animate-spin">⏳</span>} */}
                     {form.processing ? <Spinner /> : <Send size={18} />}
                     Send Message
                 </Button>
