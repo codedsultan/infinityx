@@ -1,136 +1,129 @@
-# .github/workflows/deploy.yml
-# Deploy infinityx (codesultan) to production via WireGuard VPN, using Ansible from xurl-infra
-
-name: Deploy CodeSultan to Production
+name: Build & Deploy
 
 on:
-  # Manual trigger - deploy any tag/commit
-  workflow_dispatch:
-    inputs:
-      image_tag:
-        description: "Image tag to deploy (e.g., latest, v1.0.0, sha-abc123)"
-        required: true
-        default: "latest"
-        type: string
-
-  # Auto-trigger on version tags (optional)
   push:
-    tags:
-      - "v*.*.*"
+    branches: ["main", "develop"]
+  pull_request:
+    branches: ["main", "develop"]
 
-env:
-  IMAGE_TAG: ${{ github.event.inputs.image_tag || github.ref_name }}
-
-# Ensure only one CodeSultan prod deploy at a time
-concurrency:
-  group: deploy-codesultan-prod
-  cancel-in-progress: true
+permissions:
+  contents: read
+  packages: write
+  id-token: write
 
 jobs:
-  deploy-production:
+  build-and-push:
     runs-on: ubuntu-latest
-    environment: production
-    timeout-minutes: 25 # 🔒 Hard cap for the whole job
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+
+    env:
+      IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/infinityx
+
+    outputs:
+      image_tag: ${{ steps.tags.outputs.deploy_tag }}
+      environment: ${{ steps.env.outputs.environment }}
 
     steps:
-      - name: Checkout app repo (infinityx)
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Checkout infra repo (xurl-infra)
-        uses: actions/checkout@v4
+      - name: Determine environment
+        id: env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set image tags (immutable deploy tags)
+        id: tags
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            # Production: deploy immutable SHA tag, also publish latest for convenience
+            echo "deploy_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+            echo "all_tags=${{ env.IMAGE_NAME }}:latest,${{ env.IMAGE_NAME }}:${{ github.sha }},${{ env.IMAGE_NAME }}:${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            # Staging: deploy immutable-ish tag tied to commit
+            echo "deploy_tag=develop-${SHORT_SHA}" >> $GITHUB_OUTPUT
+            echo "all_tags=${{ env.IMAGE_NAME }}:develop,${{ env.IMAGE_NAME }}:develop-${SHORT_SHA},${{ env.IMAGE_NAME }}:develop-${{ github.sha }}" >> $GITHUB_OUTPUT
+
+          else
+            # PR: build-only, tag by PR number
+            echo "deploy_tag=pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            echo "all_tags=${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          repository: codedsultan/xurl-infra
-          path: infra
-          token: ${{ secrets.PAT_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Display deployment info
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ steps.tags.outputs.all_tags }}
+          build-args: |
+            PHP_VERSION=8.3
+            VITE_APP_NAME=Portfolio
+            VITE_PUSHER_APP_KEY=${{ secrets.VITE_PUSHER_APP_KEY }}
+            VITE_PUSHER_APP_CLUSTER=${{ secrets.VITE_PUSHER_APP_CLUSTER }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Image build summary
         run: |
-          echo "### 🚀 Deploying CodeSultan (infinityx) to Production" >> $GITHUB_STEP_SUMMARY
-          echo "**App:** codesultan" >> $GITHUB_STEP_SUMMARY
-          echo "**Image Tag:** ${{ env.IMAGE_TAG }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Deployment Type:** Blue-Green" >> $GITHUB_STEP_SUMMARY
-          echo "**Triggered by:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Actor:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-
-      - name: Install WireGuard & Ansible
-        run: |
-          sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y wireguard ansible
-
-      - name: Setup SSH key for Ansible
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/devops
-          chmod 600 ~/.ssh/devops
-        shell: bash
-
-      - name: Setup WireGuard VPN
-        run: |
-          echo "${{ secrets.WG_CLIENT_CONF }}" | sudo tee /etc/wireguard/wg0.conf
-          sudo chmod 600 /etc/wireguard/wg0.conf
-          sudo wg-quick up wg0
-          sleep 5
-
-      - name: Test VPS connectivity
-        run: |
-          echo "Testing connection to VPS..."
-          ping -c 2 ${{ secrets.VPS_WG_IP }}
-          nc -vz ${{ secrets.VPS_WG_IP }} 22 || true
-
-      - name: Write Ansible vault password file
-        working-directory: infra/ansible
-        run: |
-          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > ~/.ansible_vault_xurl
-          chmod 600 ~/.ansible_vault_xurl
-
-      - name: Deploy via Ansible from runner (Blue-Green)
-        working-directory: infra/ansible
-        env:
-          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}
-          SERVER_USER: ${{ secrets.SERVER_USER }}
-          # 🔒 Avoid host key prompt / slow SSH
-          ANSIBLE_HOST_KEY_CHECKING: "False"
-          ANSIBLE_SSH_COMMON_ARGS: "-o StrictHostKeyChecking=no -o ConnectTimeout=30"
-        run: |
-          set -euo pipefail
-
-          echo "=== Deploying codesultan (infinityx) to production ==="
-          echo "Image tag: $IMAGE_TAG"
-          echo "Deployment type: Blue-Green"
-          echo "Ansible user: $SERVER_USER"
-          date
-
-          # 🔒 Shell-level hard timeout for ansible itself (e.g. 20 mins)
-          timeout 1200 ansible-playbook -i inventory/production/hosts.ini playbooks/deploy.yml \
-            -e "app_name=codesultan env=production tag=$IMAGE_TAG pat_token=$PAT_TOKEN github_actor=$GITHUB_ACTOR ansible_user=$SERVER_USER" \
-            -T 60 \
-            -v
-
-          echo "=== Deployment Complete ==="
-          date
-
-      - name: Cleanup vault password file
-        if: always()
-        working-directory: infra/ansible
-        run: rm -f ~/.ansible_vault_xurl
-
-      - name: Cleanup WireGuard
-        if: always()
-        run: sudo wg-quick down wg0 || true
-
-      - name: Deployment summary
-        if: success()
-        run: |
-          echo "### ✅ Blue-Green Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "## 🐳 Docker Image Built" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🌐 **URL:** https://codesultan.xurl.fyi" >> $GITHUB_STEP_SUMMARY
-          echo "📦 **Image:** ghcr.io/codedsultan/infinityx:${{ env.IMAGE_TAG }}" >> $GITHUB_STEP_SUMMARY
-          echo "🔄 **Strategy:** Blue-Green (zero downtime)" >> $GITHUB_STEP_SUMMARY
-          echo "⏰ **Deployed at:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** ${{ steps.env.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Deploy tag:** \`${{ steps.tags.outputs.deploy_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**All tags:** \`${{ steps.tags.outputs.all_tags }}\`" >> $GITHUB_STEP_SUMMARY
+
+  trigger-deployment:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && needs.build-and-push.outputs.environment != ''
+
+    steps:
+      - name: Trigger Ansible deployment
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.INFRA_REPO_PAT }}
+          # IMPORTANT: set this to your infra repo that contains the Deploy Application workflow
+          repository: codedsultan/x-infra
+          event-type: deploy-app
+          client-payload: |
+            {
+              "app_name": "codesultan",
+              "environment": "${{ needs.build-and-push.outputs.environment }}",
+              "tag": "${{ needs.build-and-push.outputs.image_tag }}",
+              "commit_sha": "${{ github.sha }}",
+              "commit_message": "${{ github.event.head_commit.message }}",
+              "triggered_by": "${{ github.actor }}",
+              "repo": "${{ github.repository }}",
+              "run_id": "${{ github.run_id }}"
+            }
+
+      - name: Deployment triggered
+        run: |
+          echo "## 🚀 Deployment Triggered" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Next steps:**" >> $GITHUB_STEP_SUMMARY
-          echo "- Check active slot on server" >> $GITHUB_STEP_SUMMARY
-          echo "- Verify application health" >> $GITHUB_STEP_SUMMARY
-          echo "- Monitor logs for any issues" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** ${{ needs.build-and-push.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** \`${{ needs.build-and-push.outputs.image_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Track progress:** https://github.com/codedsultan/xurl-infra-2/actions" >> $GITHUB_STEP_SUMMARY

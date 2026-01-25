@@ -1,10 +1,18 @@
 name: Build & Push Docker image
 
 on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
+  # Manual trigger - build and push any tag/commit
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (e.g., latest, v1.0.0, sha-abc123)"
+        required: true
+        default: "latest"
+        type: string
+  # push:
+  #   branches: ["main"]
+  # pull_request:
+  #   branches: ["main"]
 
 permissions:
   contents: read

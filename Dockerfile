@@ -56,11 +56,6 @@ COPY . ${APP_BASE_DIR}
 # Copy built frontend assets
 COPY --from=node-builder /app/public/build ${APP_BASE_DIR}/public/build
 
-# COPY CV and profile images (add these lines)
-COPY storage/app/public/cv/codesultan/Olusegun_Ibraheem_CV.pdf ${APP_BASE_DIR}/storage/app/public/cv/codesultan/
-COPY storage/app/public/profile/codesultan/olusegun-ibraheem.jpg ${APP_BASE_DIR}/storage/app/public/profile/codesultan/
-
-
 # Ensure Laravel storage + cache directories exist and are writable by www-data
 RUN mkdir -p \
     ${APP_BASE_DIR}/storage/logs \
