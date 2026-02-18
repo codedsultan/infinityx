@@ -8,7 +8,12 @@ class CaptchaService
 {
     public function validate(string $type, ?string $token, ?string $action = null): bool
     {
+        // Allow globally disabling captcha
         if ($type === 'none') return true;
+
+        // If you want to force using CAPTCHA_TYPE from env/config:
+        $type = config('captcha.type', $type);
+
         if (!is_string($token) || trim($token) === '') return false;
 
         return match ($type) {
@@ -22,12 +27,13 @@ class CaptchaService
 
     private function verifyGoogleV2(string $token): bool
     {
-        $secret = env('RECAPTCHA_V2_SECRET');
+        $secret = config('captcha.recaptcha_v2.secret');
         if (!$secret) return false;
 
         $res = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
             'secret' => $secret,
             'response' => $token,
+            'remoteip' => request()->ip(), // optional, helpful
         ])->json();
 
         return (bool) data_get($res, 'success', false);
@@ -35,34 +41,39 @@ class CaptchaService
 
     private function verifyGoogleV3(string $token, ?string $expectedAction): bool
     {
-        $secret = env('RECAPTCHA_V3_SECRET');
+        $secret = config('captcha.recaptcha_v3.secret');
         if (!$secret) return false;
 
         $res = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
             'secret' => $secret,
             'response' => $token,
+            'remoteip' => request()->ip(), // optional, helpful
         ])->json();
 
+        // Keep logging while you validate staging/prod (remove later if you want)
         logger()->info('captcha_response', ['response' => $res]);
 
         if (!data_get($res, 'success', false)) return false;
 
-        // Action check (matches your frontend captchaAction)
+        // Action check (matches frontend captchaAction)
         if ($expectedAction && data_get($res, 'action') !== $expectedAction) return false;
 
-        // Score check (tune threshold if needed)
+        // Score check (tune via env RECAPTCHA_V3_SCORE_THRESHOLD)
+        $threshold = (float) config('captcha.recaptcha_v3.score_threshold', 0.5);
         $score = (float) data_get($res, 'score', 0.0);
-        return $score >= 0.5;
+
+        return $score >= $threshold;
     }
 
     private function verifyHCaptcha(string $token): bool
     {
-        $secret = env('HCAPTCHA_SECRET');
+        $secret = config('captcha.hcaptcha.secret');
         if (!$secret) return false;
 
         $res = Http::asForm()->post('https://hcaptcha.com/siteverify', [
             'secret' => $secret,
             'response' => $token,
+            'remoteip' => request()->ip(), // optional
         ])->json();
 
         return (bool) data_get($res, 'success', false);
@@ -70,12 +81,13 @@ class CaptchaService
 
     private function verifyTurnstile(string $token): bool
     {
-        $secret = env('TURNSTILE_SECRET');
+        $secret = config('captcha.turnstile.secret');
         if (!$secret) return false;
 
         $res = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
             'secret' => $secret,
             'response' => $token,
+            'remoteip' => request()->ip(), // optional
         ])->json();
 
         return (bool) data_get($res, 'success', false);
