@@ -47,6 +47,7 @@ class ContactRequest extends FormRequest
                 'required_unless:captchaType,none',
                 'string',
             ],
+            'captchaAction' => ['nullable', 'string', 'max:64'],
         ];
     }
 
