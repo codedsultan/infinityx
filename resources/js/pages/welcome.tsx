@@ -33,6 +33,7 @@ import EducationSection from "@/components/about/EducationSection";
 import EngineeringPractices from "@/components/about/EngineeringPractices";
 // import { useAppearance } from "@/hooks/use-appearance";
 import { PersonSchema, PortfolioSchema, WebsiteSchema } from "@/types/schema";
+import AppLogoIcon from "@/components/app-logo-icon";
 
 interface CaptchaConfig {
     type: "recaptcha-v3" | "recaptcha-v2" | "hcaptcha" | "turnstile" | "none";
@@ -256,9 +257,24 @@ const Portfolio: React.FC<PortfolioProps> = ({
                 >
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex justify-between items-center h-16">
-                            <div className="text-xl font-bold">
+                            {/* <div className="text-xl font-bold">
                                 <span className="text-[#F53003]">Olusegun</span> Ibraheem
+                            </div> */}
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background/70 shadow-sm ring-2 ring-[#F53003]/25">
+                                    <AppLogoIcon className="h-4.5 w-4.5 text-[#F53003]" strokeWidth={2.75} />
+                                </div>
+
+                                <div className="font-bold leading-tight">
+                                    <div className="text-base sm:text-xl">
+                                        <span className="text-[#F53003]">Olusegun</span> Ibraheem
+                                    </div>
+                                    <div className="text-xs text-muted-foreground hidden sm:block">
+                                        Senior Software Engineer
+                                    </div>
+                                </div>
                             </div>
+
 
                             <div className="hidden md:flex items-center space-x-8">
                                 {["home", "about", "skills", "experience", "projects", "contact"].map(
