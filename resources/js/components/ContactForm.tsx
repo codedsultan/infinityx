@@ -355,16 +355,16 @@ export default function ContactForm({
             return;
         }
 
-        // form.transform((data) => ({
-        //     ...data,
-        //     captchaToken: token ?? "",
-        //     captchaType,
-        //     captchaAction,
-        // }));
+        form.transform((data) => ({
+            ...data,
+            captchaToken: token ?? "",
+            captchaType,
+            captchaAction,
+        }));
 
-        form.setData("captchaToken", token ?? "");
-        form.setData("captchaType", captchaType);
-        form.setData("captchaAction", captchaAction);
+        // form.setData("captchaToken", token ?? "");
+        // form.setData("captchaType", captchaType);
+        // form.setData("captchaAction", captchaAction);
 
         form.post("/contact", {
             preserveScroll: true,
