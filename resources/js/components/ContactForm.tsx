@@ -355,6 +355,7 @@ export default function ContactForm({
             return;
         }
 
+        // adjusts the payload synchronously for the request being made.
         form.transform((data) => ({
             ...data,
             captchaToken: token ?? "",
@@ -362,6 +363,7 @@ export default function ContactForm({
             captchaAction,
         }));
 
+        // state update queued
         // form.setData("captchaToken", token ?? "");
         // form.setData("captchaType", captchaType);
         // form.setData("captchaAction", captchaAction);
@@ -372,11 +374,15 @@ export default function ContactForm({
             onSuccess: () => {
                 toast.success("Your message has been sent successfully!");
                 form.reset("name", "email", "message");
+                // clear transform so future submits don’t reuse old token
+                form.transform((data) => data);
                 resetCaptcha();
                 onSuccess?.();
             },
 
             onError: () => {
+                // clear transform so future submits don’t reuse old token
+                form.transform((data) => data);
                 resetCaptcha();
                 toast.error("Please fix the errors and try again.");
             },
