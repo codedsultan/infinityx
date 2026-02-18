@@ -207,6 +207,25 @@ const Portfolio: React.FC<PortfolioProps> = ({
         window.location.href = "/download-cv";
     };
 
+
+    const [waOffset, setWaOffset] = useState(24);
+
+    useEffect(() => {
+        const contactEl = document.getElementById("contact");
+        if (!contactEl) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                // If contact section is visible, raise the button
+                setWaOffset(entry.isIntersecting ? 140 : 24);
+            },
+            { threshold: 0.2 }
+        );
+
+        observer.observe(contactEl);
+        return () => observer.disconnect();
+    }, []);
+
     return (
         <>
             <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
@@ -695,16 +714,19 @@ const Portfolio: React.FC<PortfolioProps> = ({
 
             </div>
             <Toaster position="top-right" richColors duration={4000} />
-            <a
-                href={whatsappLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Chat on WhatsApp"
-                className="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg p-4 transition"
-            >
-                <MessageCircle size={20} />
-            </a>
-
+            {activeSection !== "contact" && (
+                <a
+                    href={whatsappLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Chat on WhatsApp"
+                    // style={{ bottom: waOffset }}
+                    style={{ bottom: "calc(env(safe-area-inset-bottom) + 7rem)" }}
+                    className="fixed right-6 z-50 rounded-full shadow-lg border border-border bg-background p-4 hover:bg-muted transition"
+                >
+                    <MessageCircle size={20} />
+                </a>
+            )}
         </>
 
     );

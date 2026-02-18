@@ -25,7 +25,7 @@ class ContactRequest extends FormRequest
                 'string',
                 'min:2',
                 'max:255',
-                'regex:/^[a-zA-Z\s]+$/',
+                'regex:/^[\pL\s\'-]+$/u',
             ],
             'email' => [
                 'required',
