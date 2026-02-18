@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { usePage } from "@inertiajs/react";
 import { PageProps } from '@inertiajs/core';
 import { Toaster } from "sonner";
+import { MessageCircle } from "lucide-react";
+
 
 import {
     Github,
@@ -115,7 +117,16 @@ const Portfolio: React.FC<PortfolioProps> = ({
 
 
     const { appearance, updateAppearance } = useAppearance();
-    console.log(captcha);
+
+
+    const whatsappNumber = "2348137962936";
+
+    const whatsappMessage = encodeURIComponent(
+        "Hi Olusegun, I found your portfolio and I’d like to discuss a project."
+    );
+
+    const whatsappLink = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
+    // console.log(captcha);
 
     const categorizedProjects = {
         wordpress: [
@@ -684,6 +695,16 @@ const Portfolio: React.FC<PortfolioProps> = ({
 
             </div>
             <Toaster position="top-right" richColors duration={4000} />
+            <a
+                href={whatsappLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Chat on WhatsApp"
+                className="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg p-4 transition"
+            >
+                <MessageCircle size={20} />
+            </a>
+
         </>
 
     );
