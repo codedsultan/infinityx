@@ -13,6 +13,13 @@ class ContactController extends Controller
 {
     public function store(ContactRequest $request, CaptchaService $captcha)
     {
+
+        logger()->info('captcha_incoming', [
+            'type_config' => config('captcha.type'),
+            'token_len' => is_string($request->captchaToken) ? strlen($request->captchaToken) : null,
+            'action' => $request->captchaAction,
+        ]);
+
         // Validate CAPTCHA
         if (! $captcha->validate($request->captchaType, $request->captchaToken)) {
             throw ValidationException::withMessages([

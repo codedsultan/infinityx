@@ -85,6 +85,11 @@ class PortfolioController extends Controller
             'devops' => ['AWS (EC2, RDS)', 'Docker', 'CI/CD', 'Ansible', 'Cloudways']
         ];
 
+        logger()->info('captcha_props', [
+            'type' => config('captcha.type'),
+            'site' => config('captcha.recaptcha_v3.site'),
+        ]);
+
         return Inertia::render('welcome', [
             'projects' => $projects,
             'experiences' => $experiences,

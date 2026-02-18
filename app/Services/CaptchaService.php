@@ -51,7 +51,18 @@ class CaptchaService
         ])->json();
 
         // Keep logging while you validate staging/prod (remove later if you want)
-        logger()->info('captcha_response', ['response' => $res]);
+        // logger()->info('captcha_response', ['response' => $res]);
+        logger()->info('captcha_debug', [
+            'success' => data_get($res, 'success'),
+            'error_codes' => data_get($res, 'error-codes'),
+            'hostname' => data_get($res, 'hostname'),
+            'action' => data_get($res, 'action'),
+            'score' => data_get($res, 'score'),
+            'token_len' => strlen($token),
+            'config_type' => config('captcha.type'),
+            'site_key' => config('captcha.recaptcha_v3.site'),
+        ]);
+
 
         if (!data_get($res, 'success', false)) return false;
 

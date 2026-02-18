@@ -55,15 +55,16 @@ class HandleInertiaRequests extends Middleware
             //     default        => null
             // }
             'captcha' => [
-                'type' => env('CAPTCHA_TYPE', 'none'),
-                'siteKey' => match (env('CAPTCHA_TYPE')) {
-                    'recaptcha-v2' => env('RECAPTCHA_V2_SITE'),
-                    'recaptcha-v3' => env('RECAPTCHA_V3_SITE'),
-                    'hcaptcha'     => env('HCAPTCHA_SITE'),
-                    'turnstile'    => env('TURNSTILE_SITE'),
-                    default        => ''
-                }
-            ]
+                'type' => config('captcha.type', 'none'),
+                'siteKey' => match (config('captcha.type', 'none')) {
+                    'recaptcha-v2' => (string) config('captcha.recaptcha_v2.site', ''),
+                    'recaptcha-v3' => (string) config('captcha.recaptcha_v3.site', ''),
+                    'hcaptcha'     => (string) config('captcha.hcaptcha.site', ''),
+                    'turnstile'    => (string) config('captcha.turnstile.site', ''),
+                    default        => '',
+                },
+            ],
+
         ];
     }
 }
