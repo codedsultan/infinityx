@@ -344,49 +344,59 @@ export default function ContactForm({
         }
     }, [captchaType, executeV3]);
 
+    const submittingRef = useRef(false);
     const submit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        if (submittingRef.current) return;      // hard guard
+        submittingRef.current = true;
 
-        const token = await getCaptchaToken();
+        try {
+            const token = await getCaptchaToken();
 
-        // universal guard (prevents empty token posts)
-        if (captchaType !== "none" && (!token || token.length === 0)) {
-            toast.error("Please complete the security verification.");
-            return;
+            // universal guard (prevents empty token posts)
+            if (captchaType !== "none" && (!token || token.length === 0)) {
+                toast.error("Please complete the security verification.");
+                return;
+            }
+
+            // adjusts the payload synchronously for the request being made.
+            form.transform((data) => ({
+                ...data,
+                captchaToken: token ?? "",
+                captchaType,
+                captchaAction,
+            }));
+
+            // state update queued
+            // form.setData("captchaToken", token ?? "");
+            // form.setData("captchaType", captchaType);
+            // form.setData("captchaAction", captchaAction);
+
+            form.post("/contact", {
+                preserveScroll: true,
+
+                onSuccess: () => {
+                    toast.success("Your message has been sent successfully!");
+                    form.reset("name", "email", "message");
+                    // clear transform so future submits don’t reuse old token
+                    form.transform((data) => data);
+                    resetCaptcha();
+                    onSuccess?.();
+                },
+
+                onError: () => {
+                    // clear transform so future submits don’t reuse old token
+                    form.transform((data) => data);
+                    resetCaptcha();
+                    toast.error("Please fix the errors and try again.");
+                },
+            });
+        } finally {
+            // if you returned early above (captcha missing), ensure we unlock:
+            if (submittingRef.current && form.processing === false) {
+                // optional: leave as-is; onFinish won't run if you never posted
+            }
         }
-
-        // adjusts the payload synchronously for the request being made.
-        form.transform((data) => ({
-            ...data,
-            captchaToken: token ?? "",
-            captchaType,
-            captchaAction,
-        }));
-
-        // state update queued
-        // form.setData("captchaToken", token ?? "");
-        // form.setData("captchaType", captchaType);
-        // form.setData("captchaAction", captchaAction);
-
-        form.post("/contact", {
-            preserveScroll: true,
-
-            onSuccess: () => {
-                toast.success("Your message has been sent successfully!");
-                form.reset("name", "email", "message");
-                // clear transform so future submits don’t reuse old token
-                form.transform((data) => data);
-                resetCaptcha();
-                onSuccess?.();
-            },
-
-            onError: () => {
-                // clear transform so future submits don’t reuse old token
-                form.transform((data) => data);
-                resetCaptcha();
-                toast.error("Please fix the errors and try again.");
-            },
-        });
     };
 
     const submitDisabled =
