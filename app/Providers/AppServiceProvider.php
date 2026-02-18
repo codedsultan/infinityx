@@ -23,13 +23,13 @@ class AppServiceProvider extends ServiceProvider
     {
         if (app()->environment('production') || app()->environment('staging')) {
             URL::forceScheme('https');
-        }
 
-        LogViewer::auth(function ($request) {
-            return (bool) ($request->user()
-                && in_array($request->user()->email, [
-                    config('admin.email'),
-                ]));
-        });
+            LogViewer::auth(function ($request) {
+                return (bool) ($request->user()
+                    && in_array($request->user()->email, [
+                        config('admin.email'),
+                    ]));
+            });
+        }
     }
 }
