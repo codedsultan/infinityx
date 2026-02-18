@@ -345,7 +345,7 @@ const Portfolio: React.FC<PortfolioProps> = ({
                             style={{ animationDelay: "0.25s" }}
                         >
                             Architecting scalable solutions across the full stack with expertise
-                            in Laravel, React, AWS, and modern DevOps practices.
+                            in PHP, Python, Golang, Laravel, Flutter, React, AWS, and modern DevOps practices.
                         </p>
 
                         {/* CTAs */}
