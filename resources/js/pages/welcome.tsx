@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { usePage } from "@inertiajs/react";
 import { PageProps } from '@inertiajs/core';
 import { Toaster } from "sonner";
-import { MessageCircle } from "lucide-react";
-
+// import { MessageCircle } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 
 import {
     Github,
@@ -79,11 +79,6 @@ interface SEOInfo {
     keywords?: string;
     image?: string;
     url?: string | null;
-    // schemas?: {
-    //     person?: any;
-    //     website?: any;
-    //     portfolio?: any;
-    // };
     schemas?: {
         person?: PersonSchema;
         website?: WebsiteSchema;
@@ -208,23 +203,23 @@ const Portfolio: React.FC<PortfolioProps> = ({
     };
 
 
-    const [waOffset, setWaOffset] = useState(24);
+    // const [waOffset, setWaOffset] = useState(24);
 
-    useEffect(() => {
-        const contactEl = document.getElementById("contact");
-        if (!contactEl) return;
+    // useEffect(() => {
+    //     const contactEl = document.getElementById("contact");
+    //     if (!contactEl) return;
 
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                // If contact section is visible, raise the button
-                setWaOffset(entry.isIntersecting ? 140 : 24);
-            },
-            { threshold: 0.2 }
-        );
+    //     const observer = new IntersectionObserver(
+    //         ([entry]) => {
+    //             // If contact section is visible, raise the button
+    //             setWaOffset(entry.isIntersecting ? 140 : 24);
+    //         },
+    //         { threshold: 0.2 }
+    //     );
 
-        observer.observe(contactEl);
-        return () => observer.disconnect();
-    }, []);
+    //     observer.observe(contactEl);
+    //     return () => observer.disconnect();
+    // }, []);
 
     return (
         <>
@@ -720,11 +715,10 @@ const Portfolio: React.FC<PortfolioProps> = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Chat on WhatsApp"
-                // style={{ bottom: waOffset }}
                 style={{ bottom: "calc(env(safe-area-inset-bottom) + 7rem)" }}
-                className="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg p-4 transition"
+                className="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg p-3 transition"
             >
-                <MessageCircle size={20} />
+                <FaWhatsapp size={24} />
             </a>
             {/* )} */}
         </>
