@@ -714,19 +714,19 @@ const Portfolio: React.FC<PortfolioProps> = ({
 
             </div>
             <Toaster position="top-right" richColors duration={4000} />
-            {activeSection !== "contact" && (
-                <a
-                    href={whatsappLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Chat on WhatsApp"
-                    // style={{ bottom: waOffset }}
-                    style={{ bottom: "calc(env(safe-area-inset-bottom) + 7rem)" }}
-                    className="fixed right-6 z-50 rounded-full shadow-lg border border-border bg-background p-4 hover:bg-muted transition"
-                >
-                    <MessageCircle size={20} />
-                </a>
-            )}
+            {/* {activeSection !== "contact" && ( */}
+            <a
+                href={whatsappLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Chat on WhatsApp"
+                // style={{ bottom: waOffset }}
+                style={{ bottom: "calc(env(safe-area-inset-bottom) + 7rem)" }}
+                className="fixed right-6 z-50 rounded-full shadow-lg border border-border bg-background p-4 hover:bg-muted transition"
+            >
+                <MessageCircle size={20} />
+            </a>
+            {/* )} */}
         </>
 
     );
