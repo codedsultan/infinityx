@@ -722,7 +722,7 @@ const Portfolio: React.FC<PortfolioProps> = ({
                 aria-label="Chat on WhatsApp"
                 // style={{ bottom: waOffset }}
                 style={{ bottom: "calc(env(safe-area-inset-bottom) + 7rem)" }}
-                className="fixed right-6 z-50 rounded-full shadow-lg border border-border bg-background p-4 hover:bg-muted transition"
+                className="fixed bottom-6 right-6 z-50 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg p-4 transition"
             >
                 <MessageCircle size={20} />
             </a>

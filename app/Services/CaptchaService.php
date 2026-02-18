@@ -43,6 +43,7 @@ class CaptchaService
             'response' => $token,
         ])->json();
 
+        log('reCAPTCHA v3 response:', $res);
         if (!data_get($res, 'success', false)) return false;
 
         // Action check (matches your frontend captchaAction)
