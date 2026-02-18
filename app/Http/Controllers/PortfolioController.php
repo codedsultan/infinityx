@@ -95,7 +95,7 @@ class PortfolioController extends Controller
             'experiences' => $experiences,
             'skills' => $skills,
             // 'profileImage' => asset('storage/profile/codesultan/olusegun-ibraheem.jpg'),
-            'profileImage' => asset('codesultan/static/Olusegun-Ibraheem.jpg'),
+            'profileImage' => asset('codesultan/static/Olusegun-Ibraheem.webp'),
             'contactInfo' => [
                 'email' => 'codesultan369@gmail.com',
                 'phone' => '+234-813-796-2936',

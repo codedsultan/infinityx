@@ -4,6 +4,7 @@ import { PageProps } from '@inertiajs/core';
 import { Toaster } from "sonner";
 // import { MessageCircle } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
+import AppearanceToggleDropdown from "@/components/appearance-dropdown";
 
 import {
     Github,
@@ -30,7 +31,7 @@ import AboutImage from "@/components/about/AboutImage";
 import AboutSummary from "@/components/about/AboutSummary";
 import EducationSection from "@/components/about/EducationSection";
 import EngineeringPractices from "@/components/about/EngineeringPractices";
-import { useAppearance } from "@/hooks/use-appearance";
+// import { useAppearance } from "@/hooks/use-appearance";
 import { PersonSchema, PortfolioSchema, WebsiteSchema } from "@/types/schema";
 
 interface CaptchaConfig {
@@ -111,7 +112,7 @@ const Portfolio: React.FC<PortfolioProps> = ({
     const { captcha } = usePage<PortfolioPageProps>().props;
 
 
-    const { appearance, updateAppearance } = useAppearance();
+    // const { appearance, updateAppearance } = useAppearance();
 
 
     const whatsappNumber = "2348137962936";
@@ -276,7 +277,7 @@ const Portfolio: React.FC<PortfolioProps> = ({
                                 )}
 
                                 {/* Theme Toggle */}
-                                <button
+                                {/* <button
                                     onClick={() =>
                                         updateAppearance(
                                             appearance === "dark" ? "light" : "dark"
@@ -285,7 +286,9 @@ const Portfolio: React.FC<PortfolioProps> = ({
                                     className="p-2 rounded-lg border border-border hover:bg-muted transition"
                                 >
                                     {appearance === "dark" ? "☀️" : "🌙"}
-                                </button>
+                                </button> */}
+                                <AppearanceToggleDropdown className="ml-2" />
+
                             </div>
 
                             <button
