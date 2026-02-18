@@ -677,11 +677,11 @@ const Portfolio: React.FC<PortfolioProps> = ({
                 <footer className="py-8 px-4 border-t border-border bg-background">
                     <div className="max-w-7xl mx-auto text-center">
                         <p className="text-muted-foreground">
-                            © 2025 Olusegun Ibraheem. Built with React, Tailwind CSS
-                            & Inertia.js
+                            © {new Date().getFullYear()} Olusegun Ibraheem. Built with Laravel, React & Tailwind CSS
                         </p>
                     </div>
                 </footer>
+
             </div>
             <Toaster position="top-right" richColors duration={4000} />
         </>
