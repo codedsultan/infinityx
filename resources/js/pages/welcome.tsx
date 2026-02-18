@@ -618,7 +618,7 @@ const Portfolio: React.FC<PortfolioProps> = ({
                             Get In Touch
                         </h2>
 
-                        <div className="grid md:grid-cols-1 gap-8">
+                        <div className="grid md:grid-cols-2 gap-8">
                             {/* Left */}
                             <div>
                                 <h3 className="text-2xl font-bold mb-6">
@@ -664,11 +664,11 @@ const Portfolio: React.FC<PortfolioProps> = ({
 
                             {/* Right */}
                             {/* <ContactForm /> */}
-                            {/* <ContactForm
+                            <ContactForm
                                 captchaType={captcha.type}
                                 captchaSiteKey={captcha.siteKey}
                                 captchaAction="contact_form"
-                            /> */}
+                            />
                         </div>
                     </div>
                 </section>
