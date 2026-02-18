@@ -357,7 +357,7 @@ const Portfolio: React.FC<PortfolioProps> = ({
                         </div>
 
                         <p
-                            className="text-lg md:text-xl max-w-2xl mx-auto mb-8 leading-relaxed animate-fade-in-up"
+                            className="text-lg md:text-xl max-w-3xl mx-auto mb-8 leading-relaxed animate-fade-in-up"
                             style={{ animationDelay: "0.25s" }}
                         >
                             Architecting scalable solutions across the full stack with expertise
