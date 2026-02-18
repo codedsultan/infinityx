@@ -77,7 +77,7 @@ export default function AdminProjectForm({
             ? `/manage/projects/${project!.id}`
             : "/admin/projects";
 
-        form.post(url, {
+        form.put(url, {
             forceFormData: true,
             method: isEdit ? "put" : "post",
             onSuccess: () => {

@@ -10,11 +10,24 @@ class AdminUserSeeder extends Seeder
 {
     public function run()
     {
-        User::create([
-            'name' => 'Olusegun Ibraheem',
-            'email' => 'codesultan369@gmail.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
+        $name = config('admin.name');
+        $email = config('admin.email');
+        $password = config('admin.password');
+
+        if (!$name || !$email || !$password) {
+            $this->command?->warn('Admin user not seeded. Missing ADMIN_NAME, ADMIN_EMAIL, or ADMIN_PASSWORD in env.');
+            return;
+        }
+
+        User::updateOrCreate(
+            ['email' => $email],
+            [
+                'name' => $name,
+                'password' => Hash::make($password),
+                'email_verified_at' => now(),
+            ]
+        );
+
+        $this->command?->info("Admin user ensured: {$email}");
     }
 }

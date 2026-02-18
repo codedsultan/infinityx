@@ -28,7 +28,7 @@ class ContactController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
-        Notification::route('mail', 'codesultan369@gmail.com')
+        Notification::route('mail', config('admin.email'))
             ->notify(new NewContactMessage($contact));
 
         // return response()->json(['status' => 'ok'], 200);
