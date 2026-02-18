@@ -41,7 +41,7 @@ class NewContactMessage extends Notification implements ShouldQueue
             ->line('**Message:**')
             ->line($this->contact->message)
             ->line('**Submitted at:** ' . $this->contact->created_at->format('F j, Y, g:i a'))
-            ->action('View in Dashboard', url('/admin/contacts/' . $this->contact->id))
+            ->action('View in Dashboard', url('/manage/contacts/' . $this->contact->id))
             ->line('Reply to this person at: ' . $this->contact->email);
     }
 

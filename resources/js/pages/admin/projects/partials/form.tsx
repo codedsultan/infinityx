@@ -74,7 +74,7 @@ export default function AdminProjectForm({
         e.preventDefault();
 
         const url = isEdit
-            ? `/admin/projects/${project!.id}`
+            ? `/manage/projects/${project!.id}`
             : "/admin/projects";
 
         form.post(url, {

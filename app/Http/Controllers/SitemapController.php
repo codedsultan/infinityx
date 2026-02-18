@@ -54,6 +54,8 @@ class SitemapController extends Controller
         $content .= "Allow: /\n";
         $content .= "Disallow: /admin\n";
         $content .= "Disallow: /admin/*\n\n";
+        $content .= "Disallow: /manage\n";
+        $content .= "Disallow: /manage/*\n\n";
         $content .= "Sitemap: {$siteUrl}/sitemap.xml\n";
 
         return response($content, 200)

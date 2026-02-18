@@ -190,19 +190,19 @@ export default function AdminDashboard({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <a
-                            href="/admin/projects/create"
+                            href="/manage/projects/create"
                             className="flex items-center justify-center gap-2 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                         >
                             <Package size={20} /> Add Project
                         </a>
                         <a
-                            href="/admin/projects"
+                            href="/manage/projects"
                             className="flex items-center justify-center gap-2 p-3 bg-muted text-foreground rounded-lg border border-border hover:bg-muted/60 transition"
                         >
                             <Package size={20} /> Manage Projects
                         </a>
                         <a
-                            href="/admin/contacts?status=unread"
+                            href="/manage/contacts?status=unread"
                             className="flex items-center justify-center gap-2 p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
                         >
                             <Mail size={20} /> View Unread Messages
